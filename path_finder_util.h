@@ -8,7 +8,7 @@
 
 namespace challenge {
 constexpr double kMinDistance = 5;
-constexpr long double kEarthRadiusKm = 6356.752;
+constexpr double kEarthRadiusKm = 6356.752;
 constexpr double kCarSpeedKmPh = 105;
 constexpr double kCarCapacityKm = 320;
 constexpr char kNodePairMapFile[] = "node_pair_distance_map.txt";	

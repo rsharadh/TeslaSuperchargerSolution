@@ -11,20 +11,20 @@
 
 namespace challenge {
 namespace {
-constexpr long double kPI = 3.14159265359;
-constexpr long double kMinLatDiff = 1;
-constexpr long double kMinLongDiff = 1;
+constexpr double kPI = 3.14159265359;
+constexpr double kMinLatDiff = 1;
+constexpr double kMinLongDiff = 1;
 constexpr int kMaxPowerOdd = 15;
-constexpr long double kFactorial[] = {
+constexpr double kFactorial[] = {
 	1, 1, 2, 6, 24, 120, 
 	720, 5040, 40320, 362880, 3628800, 39916800,
 	479001600, 6227020800, 87178291200, 1307674368000
 };
 
-long double CustomSin(long double angle_radian) {
-	long double square = angle_radian * angle_radian;
-	long double prod = angle_radian;
-	long double sum = 0;
+double CustomSin(double angle_radian) {
+	double square = angle_radian * angle_radian;
+	double prod = angle_radian;
+	double sum = 0;
 	int sign_prod = -1;
 	for (int index = 1; index <= kMaxPowerOdd; index += 2) {
 		sign_prod = -sign_prod;
@@ -34,11 +34,11 @@ long double CustomSin(long double angle_radian) {
 	return sum;
 }
 
-long double CustomCos(long double angle_radian) {
+double CustomCos(double angle_radian) {
 
-	long double square = angle_radian * angle_radian;
-	long double prod = square;
-	long double sum = 1;
+	double square = angle_radian * angle_radian;
+	double prod = square;
+	double sum = 1;
 
 	int sign_prod = 1;
 	for (int index = 2; index < kMaxPowerOdd; index += 2) {
@@ -49,16 +49,16 @@ long double CustomCos(long double angle_radian) {
 	return sum;
 }
 
-long double CustomASin(long double value) {
+double CustomASin(double value) {
 	if (value >= 1) {
 		value = 1.0;
 	}
 	if (value <= -1) {
 		value = -1.0;
 	}
-	long double square = value * value;
-	long double prod = value;
-	long double sum = 0;
+	double square = value * value;
+	double prod = value;
+	double sum = 0;
 	sum += prod;
 	prod *= square;
 	sum += prod / 6;
@@ -71,11 +71,11 @@ long double CustomASin(long double value) {
 	return sum;
 }
 
-long double DegreeToRadian(const double degree) {
-	return static_cast<long double>(degree) * kPI / 180.0;
+double DegreeToRadian(const double degree) {
+	return static_cast<double>(degree) * kPI / 180.0;
 }
 
-long double SinDegree(const double degree) {
+double SinDegree(const double degree) {
 #ifdef CUSTOM_TRIG	
 	return CustomSin(DegreeToRadian(degree));
 #else
@@ -83,7 +83,7 @@ long double SinDegree(const double degree) {
 #endif	
 }
 
-long double CosDegree(const double degree) {
+double CosDegree(const double degree) {
 #ifdef CUSTOM_TRIG	
 	return CustomCos(DegreeToRadian(degree));
 #else
@@ -91,15 +91,15 @@ long double CosDegree(const double degree) {
 #endif	
 }
 
-long double ComputeASin(long double value) {
+double ComputeASin(double value) {
 	return asin(value);	
 }
 
-long double Square(const long double x) {
+double Square(const double x) {
 	return x * x;
 }
 
-long double ComputeACos(long double value) {
+double ComputeACos(double value) {
 	return kPI / 2.0 - ComputeASin(value);
 }
 
@@ -113,10 +113,10 @@ double GreatCircleDistanceKmSimple(const row& a, const row& b) {
 
 
 // https://en.wikipedia.org/wiki/Great-circle_distance#Formulae
-long double GreatCircleDistanceKmHaversine(const row& a, const row& b) {
-	long double delta_lon = a.lon - b.lon;
-	long double delta_lat = a.lat - b.lat;
-	long double central_angle = 
+double GreatCircleDistanceKmHaversine(const row& a, const row& b) {
+	double delta_lon = a.lon - b.lon;
+	double delta_lat = a.lat - b.lat;
+	double central_angle = 
 		2.0 * 
 		ComputeASin(
 			sqrt(
@@ -133,8 +133,8 @@ double HypotenuseApproximation(const row& a, const row& b) {
 		return 0.0;
 	}
 	// Use pythogoras theorem and approximate distances.
-	long double abs_delta_lon = fabs(a.lon - b.lon);
-	long double abs_delta_lat = fabs(a.lat - b.lat);
+	double abs_delta_lon = fabs(a.lon - b.lon);
+	double abs_delta_lat = fabs(a.lat - b.lat);
 	auto abs_delta_lon_double = kEarthRadiusKm * 1000 * abs_delta_lon / 180.0 * kPI;
 	auto abs_delta_lat_double = kEarthRadiusKm * 1000 * abs_delta_lat / 180.0 * kPI;
 	auto hypotenuse = sqrt(Square(abs_delta_lon_double) + Square(abs_delta_lat_double));
@@ -144,8 +144,8 @@ double HypotenuseApproximation(const row& a, const row& b) {
 
 double GreatCircleDistanceKm(
 	const row& a, const row& b, const bool is_haversine) {
-	long double abs_delta_lon = fabs(a.lon - b.lon);
-	long double abs_delta_lat = fabs(a.lat - b.lat);
+	double abs_delta_lon = fabs(a.lon - b.lon);
+	double abs_delta_lat = fabs(a.lat - b.lat);
 	if (abs_delta_lon < kMinLatDiff && 
 		abs_delta_lat < kMinLongDiff) {
 		return HypotenuseApproximation(a, b);
