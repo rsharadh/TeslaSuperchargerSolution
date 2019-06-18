@@ -1,6 +1,9 @@
 // Tesla SuperCharger Challenge Solution by Sharadh Ramaswamy
+#include "node_distance_pair_map_pruned.h"
+
 #include <string> 
 #include <unordered_map>
+
 namespace challenge {
 std::unordered_map<std::string, double> node_pair_distance_map = {{"Albany_NY:Edison_NJ", 244.048},
 {"Edison_NJ:Albany_NY", 244.048},

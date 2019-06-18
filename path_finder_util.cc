@@ -7,13 +7,12 @@
 #include "path_finder_util.h"
 #include "node_distance_pair_map_pruned.h"
 
-#define CUSTOM_TRIG 0
-
 namespace challenge {
 namespace {
 constexpr double kPI = 3.14159265359;
-constexpr double kMinLatDiff = 1;
-constexpr double kMinLongDiff = 1;
+constexpr double kMinLatDiff = 0.5;
+constexpr double kMinLongDiff = 0.5;
+constexpr double kMinDistance = 5;
 constexpr int kMaxPowerOdd = 15;
 constexpr double kFactorial[] = {
 	1, 1, 2, 6, 24, 120, 
@@ -35,7 +34,6 @@ double CustomSin(double angle_radian) {
 }
 
 double CustomCos(double angle_radian) {
-
 	double square = angle_radian * angle_radian;
 	double prod = square;
 	double sum = 1;
@@ -72,7 +70,7 @@ double CustomASin(double value) {
 }
 
 double DegreeToRadian(const double degree) {
-	return static_cast<double>(degree) * kPI / 180.0;
+	return degree * kPI / 180.0;
 }
 
 double SinDegree(const double degree) {
@@ -193,10 +191,11 @@ std::vector<std::pair<std::string, double>> FindNeighborsPreComputed(
 }
 
 
-std::string GenerateNodePairKey(const std::string& string_a, const std::string& string_b) {
-	std::string key = string_a;
+std::string GenerateNodePairKey(
+	const std::string& charger_a, const std::string& charger_b) {
+	std::string key = charger_a;
 	key += ":";
-	key += string_b;
+	key += charger_b;
 	return key;	
 }
 
