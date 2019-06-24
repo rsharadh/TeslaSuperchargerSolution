@@ -70,7 +70,7 @@ class DjikstraComparator {
 // the Djikstra algorithm run on a graph of DjistraNode's.
 class DjikstraSolver {
 public:
-	DjikstraSolver(const int num_charge_levels);
+	DjikstraSolver(const int num_charge_levels, const bool is_multi_threaded_init = true);
 
 	// Computes path string consisting of a sequence of charging station plus time
 	// spent at charging station (output format set in challenge question).
@@ -138,6 +138,9 @@ private:
 	// Flag used to decide if a debug string is to be output as a part of
 	// the final path string.
 	bool is_debug_;
+
+	// Flag to indicate if initialization is multi-threaded.
+	bool is_multi_threaded_init_;
 };
 
 }  // namespace challenge 

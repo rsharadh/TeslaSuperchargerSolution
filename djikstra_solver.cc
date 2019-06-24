@@ -109,65 +109,39 @@ void DjikstraSolver::FindNeighbors() {
 		charger_name_to_neighors_map_[charger.name] = 
 			FindNeighborsPreComputed(charger);
   	}	
-	if (false) {
-		// Single threaded solution.
+	if (is_multi_threaded_init_) {
+		std::vector<std::thread> thread_vector;
+		// Multi-threaded initialization with num_charge_levels_ threads.
+  		int num_splits = num_charge_levels_ ;
+  		int num_per_split = nodes_.size() / num_splits;
+  		std::vector<std::vector<DjikstraNode*>> node_splits;
+  		node_splits.reserve(num_splits);
+  		for (int node_split_index = 0; node_split_index < num_splits; node_split_index++) {
+  			int start_position = node_split_index * num_per_split;
+  			int end_position = start_position + num_per_split; 
+  			node_splits.push_back(
+  				std::vector<DjikstraNode*>(
+  					nodes_.begin() + start_position, 
+  					nodes_.begin() + end_position));
+  			thread_vector.push_back(
+  				std::thread(
+  					&DjikstraSolver::InitializeNodesAndNeighbors, 
+  					this, 
+  					&node_splits[node_split_index]));
+  		}
+  		for (auto& t : thread_vector) {
+      		t.join();
+      	}
+	} else {
+		// Single threaded initialization.
 		for (auto node: nodes_) {
 			InitializeNodeAndNeighbors(node);
 		}
-	} else {
-		// Multi-threaded solution.
-		std::vector<std::thread> thread_vector;
-		if (false) {
-			// One thread per Djikstra node <=> num_charge_levels_ * 303 threads.
-		  for (auto node: nodes_) {
-		  	thread_vector.push_back(
-		  		std::thread(
-		  			&DjikstraSolver::InitializeNodeAndNeighbors, 
-		  			this, 
-		  			node));
-		  }
-		  for (auto& t : thread_vector) {
-		  	t.join();
-		  }
-		} else {
-			if (false) {
-				// Two threads.
-			  	std::vector<DjikstraNode*> first_half(nodes_.begin(), nodes_.begin() + nodes_.size() / 2 + 1);
-			  	std::vector<DjikstraNode*> second_half(nodes_.begin() + nodes_.size() / 2 + 1, nodes_.end());
-			
-			  	std::thread t1 (&DjikstraSolver::InitializeNodesAndNeighbors, this, &first_half);
-			  	std::thread t2 (&DjikstraSolver::InitializeNodesAndNeighbors, this, &second_half);
-			  	t1.join();
-			  	t2.join();
-		  	} else {
-				// num_charge_levels_ threads.
-		  		int num_splits = num_charge_levels_ ;
-		  		int num_per_split = nodes_.size() / num_splits;
-		  		std::vector<std::vector<DjikstraNode*>> node_splits;
-		  		node_splits.reserve(num_splits);
-		  		for (int node_split_index = 0; node_split_index < num_splits; node_split_index++) {
-		  			int start_position = node_split_index * num_per_split;
-		  			int end_position = start_position + num_per_split; 
-		  			node_splits.push_back(
-		  				std::vector<DjikstraNode*>(
-		  					nodes_.begin() + start_position, 
-		  					nodes_.begin() + end_position));
-		  			thread_vector.push_back(
-		  				std::thread(
-		  					&DjikstraSolver::InitializeNodesAndNeighbors, 
-		  					this, 
-		  					&node_splits[node_split_index]));
-		  		}
-		  		for (auto& t : thread_vector) {
-		      		t.join();
-		      	}
-		  	}
-		} 
 	}
 }
 
-DjikstraSolver::DjikstraSolver(const int num_charge_levels) 
-	: num_charge_levels_(num_charge_levels) {
+DjikstraSolver::DjikstraSolver(const int num_charge_levels, const bool is_multi_threaded_init) 
+	: num_charge_levels_(num_charge_levels), is_multi_threaded_init_(is_multi_threaded_init) {
 	double delta_charge_level = kCarCapacityKm / num_charge_levels_;	
 	for (const auto& charging_station: network) {
 		name_to_row_map_[charging_station.name] = &charging_station;
