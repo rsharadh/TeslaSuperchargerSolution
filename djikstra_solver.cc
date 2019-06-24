@@ -130,7 +130,7 @@ void DjikstraSolver::FindNeighbors() {
   					&node_splits[node_split_index]));
   		}
   		for (auto& t : thread_vector) {
-      		t.join();
+			t.join();
 		}
 	} else {
 		// Single threaded initialization.
