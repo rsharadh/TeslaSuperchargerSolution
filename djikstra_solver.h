@@ -7,7 +7,6 @@
 
 #include <algorithm>
 #include <float.h>
-#include <queue>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -66,54 +65,6 @@ class DjikstraComparator {
 		}
 };
 
-// Binary heap to organize the DjikstraNode's in the augmented graph
-// while computing single source shortest paths with the Djikstra
-// algorithm, for a given source and destination pair. 
-class DjikstraHeap {
-	public:
-		DjikstraHeap(
-			const std::vector<DjikstraNode*>& nodes) 
-				: heap_nodes_(nodes) {
-			std::make_heap(
-				heap_nodes_.begin(),
-				heap_nodes_.end(), 
-				comparator_);
-		}
-
-		bool Empty() {
-			return heap_nodes_.empty();
-		}
-
-		DjikstraNode* Top() {
-			if (Empty()) {
-				return nullptr;
-			}
-			return heap_nodes_[0];
-		}
-
-		void Pop() {
-			if (Empty()) {
-				return;
-			}
-			auto temp = heap_nodes_.front();
-			heap_nodes_.front() = heap_nodes_.back();
-			heap_nodes_.back() = temp;
-
-			heap_nodes_.pop_back();
-
-			// Rely on std::make_heap instead of std::pop_heap
-			// since the heap properties change dynamically during
-			// iterations of the Djikstra algorithm.
-			std::make_heap(
-				heap_nodes_.begin(),
-				heap_nodes_.end(), 
-				comparator_);
-		}
-	private:
-		std::vector<DjikstraNode*> heap_nodes_;	
-		DjikstraComparator comparator_;
-};
-
 // Class to find the shortest path between a pair of charging stations
 // in an augmented graph with 'num_charge_levels' charge levels, using
 // the Djikstra algorithm run on a graph of DjistraNode's.
@@ -141,9 +92,14 @@ private:
 	void PrepareSourceNodes(
 		const std::string& initial_charger_name,
 		const std::vector<int>& start_charge_indices);
-	
+
+	// Initializes one node and its neighbors.
+	void InitializeNodeAndNeighbors(DjikstraNode* node);
+	// Initializes each node and its neighbors, for given vector of nodes.
+	void InitializeNodesAndNeighbors(std::vector<DjikstraNode*>* nodes);	
 	// Populates neighborhood of each DjikstraNode in graph using
-	// pre-computed node-pair distance map.
+	// pre-computed node-pair distance map. Uses std::thread for parallelized
+	// initialization.
 	void FindNeighbors();
 	
 	// Same as FindNeighbors, but with unoptimized for-loops (hence slower).
@@ -171,9 +127,13 @@ private:
 	// as A.charger_properties.name + ':' + std::to_string(A.output_charge_level).
 	std::unordered_map<std::string, DjikstraNode*> name_to_node_map_;
 
+
 	// Map from a name of the charger to a pointer to the corresponding
 	// row element.
 	std::unordered_map<std::string, const row*> name_to_row_map_;
+
+	// Map from charger name to the name of its neighbors and their distances.	
+	std::unordered_map<std::string, std::vector<std::pair<std::string, double>>> charger_name_to_neighors_map_;	
 
 	// Flag used to decide if a debug string is to be output as a part of
 	// the final path string.

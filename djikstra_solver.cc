@@ -1,6 +1,8 @@
 // Tesla SuperCharger Challenge Solution by Sharadh Ramaswamy
 #include <algorithm>
-#include <math.h>  
+#include <math.h> 
+#include <queue> 
+#include <thread>
 
 #include "network.h"
 #include "djikstra_solver.h"
@@ -54,16 +56,10 @@ void DjikstraSolver::FindNeighborsHeavy() {
   }	
 }
 
-void DjikstraSolver::FindNeighbors() {
-  std::unordered_map<std::string, std::vector<std::pair<std::string, double>>> charger_name_to_neighors_map;
-  for (const auto& charger: network) {
-  	charger_name_to_neighors_map[charger.name] = FindNeighborsPreComputed(charger);
-  }	
-  double delta_charge_level = kCarCapacityKm / num_charge_levels_;	
-
-  for (auto node: nodes_) {
-  	const auto& neighbors = 
-  		charger_name_to_neighors_map[node->charger_properties.name];
+void DjikstraSolver::InitializeNodeAndNeighbors(DjikstraNode* node) {
+  double delta_charge_level = kCarCapacityKm / num_charge_levels_;
+  const auto& neighbors = 
+  		charger_name_to_neighors_map_[node->charger_properties.name];
   	for (const auto& candidate: neighbors) {
   		if (node->output_charge_level < candidate.second) {
   			continue;
@@ -102,7 +98,72 @@ void DjikstraSolver::FindNeighbors() {
 				recharge_time;
 	 	}
   	}
-  }
+}
+void DjikstraSolver::InitializeNodesAndNeighbors(std::vector<DjikstraNode*>* nodes) {
+	for (auto& node: *nodes) {
+		InitializeNodeAndNeighbors(node);
+	}
+}
+void DjikstraSolver::FindNeighbors() {
+	for (const auto& charger: network) {
+		charger_name_to_neighors_map_[charger.name] = 
+			FindNeighborsPreComputed(charger);
+  	}	
+	if (false) {
+		// Single threaded solution.
+		for (auto node: nodes_) {
+			InitializeNodeAndNeighbors(node);
+		}
+	} else {
+		// Multi-threaded solution.
+		std::vector<std::thread> thread_vector;
+		if (false) {
+			// One thread per Djikstra node <=> num_charge_levels_ * 303 threads.
+		  for (auto node: nodes_) {
+		  	thread_vector.push_back(
+		  		std::thread(
+		  			&DjikstraSolver::InitializeNodeAndNeighbors, 
+		  			this, 
+		  			node));
+		  }
+		  for (auto& t : thread_vector) {
+		  	t.join();
+		  }
+		} else {
+			if (false) {
+				// Two threads.
+			  	std::vector<DjikstraNode*> first_half(nodes_.begin(), nodes_.begin() + nodes_.size() / 2 + 1);
+			  	std::vector<DjikstraNode*> second_half(nodes_.begin() + nodes_.size() / 2 + 1, nodes_.end());
+			
+			  	std::thread t1 (&DjikstraSolver::InitializeNodesAndNeighbors, this, &first_half);
+			  	std::thread t2 (&DjikstraSolver::InitializeNodesAndNeighbors, this, &second_half);
+			  	t1.join();
+			  	t2.join();
+		  	} else {
+				// num_charge_levels_ threads.
+		  		int num_splits = num_charge_levels_ ;
+		  		int num_per_split = nodes_.size() / num_splits;
+		  		std::vector<std::vector<DjikstraNode*>> node_splits;
+		  		node_splits.reserve(num_splits);
+		  		for (int node_split_index = 0; node_split_index < num_splits; node_split_index++) {
+		  			int start_position = node_split_index * num_per_split;
+		  			int end_position = start_position + num_per_split; 
+		  			node_splits.push_back(
+		  				std::vector<DjikstraNode*>(
+		  					nodes_.begin() + start_position, 
+		  					nodes_.begin() + end_position));
+		  			thread_vector.push_back(
+		  				std::thread(
+		  					&DjikstraSolver::InitializeNodesAndNeighbors, 
+		  					this, 
+		  					&node_splits[node_split_index]));
+		  		}
+		  		for (auto& t : thread_vector) {
+		      		t.join();
+		      	}
+		  	}
+		} 
+	}
 }
 
 DjikstraSolver::DjikstraSolver(const int num_charge_levels) 
@@ -242,9 +303,16 @@ void DjikstraSolver::SingleSourceShortestPaths(
 
 	PrepareNodes();
 	PrepareSourceNodes(initial_charger_name, {num_charge_levels_});
-	DjikstraHeap min_distance_queue(nodes_);
-	while (!min_distance_queue.Empty()) {
-		DjikstraNode* min_element = min_distance_queue.Top();
+
+	std::priority_queue<DjikstraNode*, std::vector<DjikstraNode*>, DjikstraComparator> djikstra_queue; 
+	djikstra_queue.push(
+		name_to_node_map_[
+			GetDjikstraNodeName(
+				*name_to_row_map_[initial_charger_name], 
+				num_charge_levels_)]);
+	while (!djikstra_queue.empty()) {
+		DjikstraNode* min_element = djikstra_queue.top();
+		djikstra_queue.pop();
 		for (auto& neighbor : min_element->neighbors) {
 			if (neighbor.first->travel_time_to_get_here >
 				min_element->travel_time_to_get_here + 
@@ -253,9 +321,9 @@ void DjikstraSolver::SingleSourceShortestPaths(
 				neighbor.first->travel_time_to_get_here = 
 					min_element->travel_time_to_get_here + 
 					neighbor.second;
+				djikstra_queue.push(neighbor.first);
 			}
 		}
-		min_distance_queue.Pop();
 	}
 }
 
